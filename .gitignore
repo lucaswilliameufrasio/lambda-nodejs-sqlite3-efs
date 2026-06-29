@@ -133,3 +133,14 @@ dist
 users.db*
 
 .DS_Store
+
+# Lambda artifact
+lambda.zip
+
+# IDE
+.idea/
+*.swp
+*.swo
+
+# Floci data
+data/

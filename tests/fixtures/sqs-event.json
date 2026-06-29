@@ -1,0 +1,26 @@
+{
+  "Records": [
+    {
+      "messageId": "test-msg-001",
+      "receiptHandle": "test-receipt-001",
+      "body": "{\"type\":\"user.create\",\"requestId\":\"test-request-001\",\"timestamp\":\"2026-01-01T00:00:00.000Z\",\"payload\":{\"name\":\"Alice\",\"email\":\"alice@example.com\"}}",
+      "attributes": {},
+      "messageAttributes": {},
+      "md5OfBody": "test-md5-001",
+      "eventSource": "aws:sqs",
+      "eventSourceARN": "arn:aws:sqs:us-east-1:000000000000:test-queue.fifo",
+      "awsRegion": "us-east-1"
+    },
+    {
+      "messageId": "test-msg-002",
+      "receiptHandle": "test-receipt-002",
+      "body": "{\"type\":\"user.create\",\"requestId\":\"test-request-002\",\"timestamp\":\"2026-01-01T00:01:00.000Z\",\"payload\":{\"name\":\"Bob\",\"email\":\"bob@example.com\"}}",
+      "attributes": {},
+      "messageAttributes": {},
+      "md5OfBody": "test-md5-002",
+      "eventSource": "aws:sqs",
+      "eventSourceARN": "arn:aws:sqs:us-east-1:000000000000:test-queue.fifo",
+      "awsRegion": "us-east-1"
+    }
+  ]
+}

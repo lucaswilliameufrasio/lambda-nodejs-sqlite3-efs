@@ -1,18 +1,31 @@
 {
   "name": "lambda-nodejs-sqlite3-efs",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "version": "2.0.0",
+  "description": "Fastify + SQLite on EFS with SQS write serialization via Lambda Web Adapter",
+  "type": "module",
+  "packageManager": "@nubjs/nub@0.2.9",
   "scripts": {
-    "start": "node src/server.js",
-    "dev": "npx nodemon --exec 'npm run start'",
-    "deploy": "serverless deploy"
+    "build": "node scripts/build.mjs",
+    "test": "vitest run",
+    "test:unit": "vitest run tests/unit",
+    "test:integration": "vitest run tests/integration",
+    "package": "node scripts/package.mjs",
+    "deploy": "node scripts/deploy.mjs",
+    "infra:plan": "tofu -chdir=terraform plan",
+    "infra:apply": "tofu -chdir=terraform apply",
+    "start": "nub src/index.ts"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
-    "better-sqlite3": "^9.0.0",
-    "fastify": "^4.24.2"
+    "@aws-sdk/client-lambda": "^3.1075.0",
+    "@aws-sdk/client-sqs": "^3.1075.0",
+    "better-sqlite3": "^12.0.0",
+    "fastify": "^5.0.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.0",
+    "@types/node": "^22.0.0",
+    "esbuild": "^0.28.0",
+    "typescript": "^6.0.0",
+    "vitest": "^4.0.0"
   }
 }

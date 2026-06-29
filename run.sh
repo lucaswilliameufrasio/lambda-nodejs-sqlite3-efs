@@ -1,3 +1,2 @@
 #!/bin/bash
-
-node src/server.js
+node /var/task/dist/index.js
