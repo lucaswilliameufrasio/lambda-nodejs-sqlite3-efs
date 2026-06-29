@@ -13,7 +13,8 @@
     "deploy": "node scripts/deploy.mjs",
     "infra:plan": "tofu -chdir=terraform plan",
     "infra:apply": "tofu -chdir=terraform apply",
-    "start": "nub src/index.ts"
+    "start": "nub src/index.ts",
+    "bench:k6": "k6 run benchmarks/k6/mixed.js"
   },
   "dependencies": {
     "@aws-sdk/client-lambda": "^3.1075.0",

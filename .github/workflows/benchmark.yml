@@ -1,0 +1,141 @@
+name: benchmark
+
+on:
+  workflow_dispatch:
+    inputs:
+      vus:
+        description: Virtual users
+        required: false
+        default: "20"
+      duration:
+        description: Test duration
+        required: false
+        default: "2m"
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-22.04
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Nub
+        uses: nubjs/setup-nub@v0
+
+      - name: Install dependencies
+        run: nub install
+
+      - name: Start Floci
+        run: docker compose -f docker-compose.floci.yml up -d
+
+      - name: Configure local AWS env
+        run: |
+          echo "AWS_ENDPOINT_URL=http://localhost:4566" >> "$GITHUB_ENV"
+          echo "AWS_ACCESS_KEY_ID=test" >> "$GITHUB_ENV"
+          echo "AWS_SECRET_ACCESS_KEY=test" >> "$GITHUB_ENV"
+          echo "AWS_DEFAULT_REGION=us-east-1" >> "$GITHUB_ENV"
+
+      - name: Create FIFO queue in Floci
+        run: |
+          QUEUE_URL=$(aws \
+            --endpoint-url "$AWS_ENDPOINT_URL" \
+            sqs create-queue \
+            --queue-name lambda-nodejs-sqlite3-efs-write-queue.fifo \
+            --attributes FifoQueue=true,ContentBasedDeduplication=false \
+            --query QueueUrl \
+            --output text)
+
+          echo "SQS_QUEUE_URL=$QUEUE_URL" >> "$GITHUB_ENV"
+
+      - name: Start API
+        run: |
+          PORT=8080 \
+          DATABASE_PATH=/tmp/users.db \
+          SQS_QUEUE_URL="$SQS_QUEUE_URL" \
+          AWS_ENDPOINT_URL="$AWS_ENDPOINT_URL" \
+          AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID" \
+          AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY" \
+          AWS_DEFAULT_REGION="$AWS_DEFAULT_REGION" \
+          nub src/index.ts > app.log 2>&1 &
+          echo $! > app.pid
+
+      - name: Wait for readiness
+        run: |
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:8080/ >/dev/null 2>&1; then
+              exit 0
+            fi
+            sleep 1
+          done
+
+          echo "API did not become ready in time"
+          cat app.log || true
+          exit 1
+
+      - name: Setup k6
+        uses: grafana/setup-k6-action@v1
+
+      - name: Run k6 benchmark
+        run: |
+          k6 run \
+            --vus "${{ github.event.inputs.vus || '20' }}" \
+            --duration "${{ github.event.inputs.duration || '2m' }}" \
+            --summary-export summary.json \
+            benchmarks/k6/mixed.js | tee k6-output.txt
+
+      - name: Add benchmark summary
+        run: |
+          echo "## Benchmark Results" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          node -e '
+            const fs = require("fs");
+            const summary = JSON.parse(fs.readFileSync("summary.json", "utf8"));
+            const duration = summary.metrics.http_req_duration;
+
+            function val(obj, key) {
+              if (!obj || !obj.values) return "n/a";
+              return obj.values[key] ?? "n/a";
+            }
+
+            console.log("- requests: " + (val(summary.metrics.http_reqs, "count")));
+            console.log("- avg: " + (val(duration, "avg")));
+            console.log("- p95: " + (val(duration, "p(95)")));
+            console.log("- p99: " + (val(duration, "p(99)")));
+            console.log("- failed rate: " + (val(summary.metrics.http_req_failed, "rate")));
+            console.log("- checks rate: " + (val(summary.metrics.checks, "rate")));
+          ' >> "$GITHUB_STEP_SUMMARY"
+
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "> POST /users measures enqueue latency and 202 acceptance, not persistence latency." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload benchmark artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: k6-benchmark-results
+          path: |
+            summary.json
+            k6-output.txt
+            app.log
+
+      - name: Print logs on failure
+        if: failure()
+        run: |
+          echo "=== app.log ==="
+          cat app.log || true
+          echo "=== floci logs ==="
+          docker compose -f docker-compose.floci.yml logs || true
+
+      - name: Stop API
+        if: always()
+        run: |
+          if [ -f app.pid ]; then
+            kill "$(cat app.pid)" || true
+          fi
+
+      - name: Stop Floci
+        if: always()
+        run: docker compose -f docker-compose.floci.yml down -v
