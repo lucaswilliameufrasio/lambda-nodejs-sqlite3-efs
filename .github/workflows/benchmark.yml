@@ -22,10 +22,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - name: Setup Nub
-        uses: nubjs/setup-nub@v0
+        uses: nubjs/setup-nub@47e5e7393d50f4e9544ddaf756aa277972afba2d # v0.4.0
 
       - name: Install dependencies
         run: nub install
@@ -78,7 +78,7 @@ jobs:
           exit 1
 
       - name: Setup k6
-        uses: grafana/setup-k6-action@v1
+        uses: grafana/setup-k6-action@db07bd9765aac508ef18982e52ab937fe633a065 # v1.2.1
 
       - name: Run k6 benchmark
         env:
@@ -131,7 +131,7 @@ jobs:
           echo "> POST /users measures enqueue latency and 202 acceptance, not persistence latency." >> "$GITHUB_STEP_SUMMARY"
 
       - name: Deploy report to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
+        uses: peaceiris/actions-gh-pages@1ef5a1b1df4c63fe21a2242edbee6cac921ece01 # v4.1.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./benchmark-report
@@ -145,7 +145,7 @@ jobs:
           echo "📊 [View full report](https://${{ github.repository_owner }}.github.io/$REPO_NAME/benchmark/latest)" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload benchmark artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: k6-benchmark-results
           path: |
