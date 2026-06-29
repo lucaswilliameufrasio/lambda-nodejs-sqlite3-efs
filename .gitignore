@@ -144,3 +144,6 @@ lambda.zip
 
 # Floci data
 data/
+
+# Benchmark report
+benchmark-report/

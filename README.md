@@ -232,6 +232,31 @@ All references to `terraform` in commands and docs have been replaced with `tofu
 
 Infrastructure previously managed by `serverless.yml` is now fully owned by OpenTofu. The Lambda deployment script (`deploy`) handles code-only updates without touching infrastructure.
 
+## Benchmark
+
+The project includes a GitHub Actions workflow to run local benchmarks with k6:
+
+```bash
+# Trigger manually via GitHub Actions UI
+# Or run locally with:
+nub run bench:k6
+```
+
+The workflow:
+1. Starts Floci for local SQS emulation
+2. Creates a FIFO queue
+3. Starts the API locally
+4. Runs a mixed k6 scenario (GET /, GET /users, POST /users)
+5. Generates an HTML report
+6. Deploys the report to GitHub Pages
+
+Access the latest report at:
+```
+https://{owner}.github.io/{repo}/benchmark/latest
+```
+
+> POST /users measures enqueue latency (202 acceptance), not persistence latency.
+
 ## Caveats
 
 - Floci does not support Lambda layers or EFS — those require real AWS validation

@@ -17,7 +17,8 @@ jobs:
     runs-on: ubuntu-24.04
 
     permissions:
-      contents: read
+      contents: write
+      pages: write
 
     steps:
       - name: Checkout
@@ -80,13 +81,19 @@ jobs:
         uses: grafana/setup-k6-action@v1
 
       - name: Run k6 benchmark
+        env:
+          K6_VUS: "${{ github.event.inputs.vus || '20' }}"
+          K6_DURATION: "${{ github.event.inputs.duration || '2m' }}"
         run: |
           k6 run \
-            --vus "${{ github.event.inputs.vus || '20' }}" \
-            --duration "${{ github.event.inputs.duration || '2m' }}" \
+            --vus "$K6_VUS" \
+            --duration "$K6_DURATION" \
             --summary-trend-stats "avg,min,med,max,p(90),p(95),p(99)" \
             --summary-export summary.json \
             benchmarks/k6/mixed.js 2>&1 | tee k6-output.txt
+
+      - name: Generate HTML report
+        run: node scripts/generate-report.mjs summary.json benchmark-report
 
       - name: Add benchmark summary
         run: |
@@ -123,6 +130,20 @@ jobs:
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "> POST /users measures enqueue latency and 202 acceptance, not persistence latency." >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Deploy report to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./benchmark-report
+          destination_dir: benchmark/latest
+          keep_files: false
+
+      - name: Add report URL to summary
+        run: |
+          REPO_NAME=$(echo "${{ github.repository }}" | cut -d "/" -f 2)
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "📊 [View full report](https://${{ github.repository_owner }}.github.io/$REPO_NAME/benchmark/latest)" >> "$GITHUB_STEP_SUMMARY"
+
       - name: Upload benchmark artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -131,6 +152,7 @@ jobs:
             summary.json
             k6-output.txt
             app.log
+            benchmark-report/
 
       - name: Print logs on failure
         if: failure()
