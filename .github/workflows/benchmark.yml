@@ -27,6 +27,14 @@ jobs:
       - name: Setup Nub
         uses: nubjs/setup-nub@47e5e7393d50f4e9544ddaf756aa277972afba2d # v0.4.0
 
+      - name: Cache node_modules
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-nub-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-nub-
+
       - name: Install dependencies
         run: nub install
 

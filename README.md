@@ -237,8 +237,6 @@ Infrastructure previously managed by `serverless.yml` is now fully owned by Open
 The project includes a GitHub Actions workflow to run local benchmarks with k6:
 
 ```bash
-# Trigger manually via GitHub Actions UI
-# Or run locally with:
 nub run bench:k6
 ```
 
@@ -250,7 +248,17 @@ The workflow:
 5. Generates an HTML report
 6. Deploys the report to GitHub Pages
 
-Access the latest report at:
+### Enabling GitHub Pages
+
+For the report to be accessible, enable GitHub Pages in the repository:
+
+1. Go to **Settings > Pages**
+2. Under **Source**, select **Deploy from a branch**
+3. Set branch to **gh-pages** and folder to **/ (root)**
+4. Click **Save**
+
+After the first benchmark run completes, the report is available at:
+
 ```
 https://{owner}.github.io/{repo}/benchmark/latest
 ```
