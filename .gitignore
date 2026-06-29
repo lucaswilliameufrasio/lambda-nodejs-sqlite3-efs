@@ -131,3 +131,5 @@ dist
 
 
 users.db*
+
+.DS_Store
