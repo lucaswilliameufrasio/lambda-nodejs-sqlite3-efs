@@ -33,8 +33,8 @@ function loadMetrics() {
 
   function val(key, sub) {
     const metric = m[key];
-    if (!metric || !metric.values) return "n/a";
-    const v = metric.values[sub];
+    if (!metric) return "n/a";
+    const v = metric[sub];
     return v !== undefined && v !== null ? round(v) : "n/a";
   }
 

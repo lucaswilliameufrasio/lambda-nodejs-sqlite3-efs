@@ -110,15 +110,15 @@ jobs:
 
           extract() {
             jq -r --arg key "$1" --arg val "$2" \
-              '.metrics[$key].values[$val] // "n/a"' summary.json
+              '.metrics[$key][$val] // "n/a"' summary.json
           }
 
           REQUESTS=$(extract http_reqs count)
           AVG=$(extract http_req_duration avg)
           P95=$(extract http_req_duration "p(95)")
           P99=$(extract http_req_duration "p(99)")
-          FAILED=$(extract http_req_failed rate)
-          CHECKS=$(extract checks rate)
+          FAILED=$(extract http_req_failed value)
+          CHECKS=$(extract checks value)
 
           echo "| Requests | $REQUESTS |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Avg | ${AVG}ms |" >> "$GITHUB_STEP_SUMMARY"
