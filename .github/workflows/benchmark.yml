@@ -14,7 +14,7 @@ on:
 
 jobs:
   benchmark:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
 
     permissions:
       contents: read
@@ -84,30 +84,41 @@ jobs:
           k6 run \
             --vus "${{ github.event.inputs.vus || '20' }}" \
             --duration "${{ github.event.inputs.duration || '2m' }}" \
+            --summary-trend-stats "avg,min,med,max,p(90),p(95),p(99)" \
             --summary-export summary.json \
-            benchmarks/k6/mixed.js | tee k6-output.txt
+            benchmarks/k6/mixed.js 2>&1 | tee k6-output.txt
 
       - name: Add benchmark summary
         run: |
           echo "## Benchmark Results" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          node -e '
-            const fs = require("fs");
-            const summary = JSON.parse(fs.readFileSync("summary.json", "utf8"));
-            const duration = summary.metrics.http_req_duration;
 
-            function val(obj, key) {
-              if (!obj || !obj.values) return "n/a";
-              return obj.values[key] ?? "n/a";
-            }
+          if [ ! -f summary.json ]; then
+            echo "summary.json not found" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
 
-            console.log("- requests: " + (val(summary.metrics.http_reqs, "count")));
-            console.log("- avg: " + (val(duration, "avg")));
-            console.log("- p95: " + (val(duration, "p(95)")));
-            console.log("- p99: " + (val(duration, "p(99)")));
-            console.log("- failed rate: " + (val(summary.metrics.http_req_failed, "rate")));
-            console.log("- checks rate: " + (val(summary.metrics.checks, "rate")));
-          ' >> "$GITHUB_STEP_SUMMARY"
+          echo "| Metric | Value |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|--------|-------|" >> "$GITHUB_STEP_SUMMARY"
+
+          extract() {
+            jq -r --arg key "$1" --arg val "$2" \
+              '.metrics[$key].values[$val] // "n/a"' summary.json
+          }
+
+          REQUESTS=$(extract http_reqs count)
+          AVG=$(extract http_req_duration avg)
+          P95=$(extract http_req_duration "p(95)")
+          P99=$(extract http_req_duration "p(99)")
+          FAILED=$(extract http_req_failed rate)
+          CHECKS=$(extract checks rate)
+
+          echo "| Requests | $REQUESTS |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Avg | ${AVG}ms |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| P95 | ${P95}ms |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| P99 | ${P99}ms |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Failed rate | $FAILED |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Checks rate | $CHECKS |" >> "$GITHUB_STEP_SUMMARY"
 
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "> POST /users measures enqueue latency and 202 acceptance, not persistence latency." >> "$GITHUB_STEP_SUMMARY"
