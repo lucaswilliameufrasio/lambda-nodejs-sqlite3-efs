@@ -28,3 +28,18 @@ export interface WriteMessage {
     email: string;
   };
 }
+
+export enum ErrorCode {
+  UnexpectedError = "UNEXPECTED_ERROR",
+  Unauthorized = "UNAUTHORIZED",
+  ValidationError = "VALIDATION_ERROR",
+  QueueNotConfigured = "QUEUE_NOT_CONFIGURED",
+  UnsupportedEventType = "UNSUPPORTED_EVENT_TYPE",
+  EventProcessingFailed = "EVENT_PROCESSING_FAILED",
+}
+
+export interface HttpErrorBody {
+  message: string;
+  error_code: `${ErrorCode}`;
+  extra?: Record<string, unknown>;
+}

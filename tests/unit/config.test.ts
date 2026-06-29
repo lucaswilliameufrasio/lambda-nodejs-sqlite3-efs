@@ -12,14 +12,13 @@ afterEach(() => {
 
 describe("loadConfig", () => {
   it("returns defaults when no env vars are set", async () => {
-    const original = process.env;
-    process.env = { ...original };
+    process.env = { ...OLD_ENV };
     delete process.env["PORT"];
     delete process.env["DATABASE_PATH"];
     delete process.env["SQS_QUEUE_URL"];
     delete process.env["NODE_ENV"];
 
-    const { loadConfig } = await import("../../src/config.js");
+    const { loadConfig } = await import("@/config.js");
     const config = loadConfig();
 
     expect(config.port).toBe(8080);
@@ -34,7 +33,7 @@ describe("loadConfig", () => {
     process.env["SQS_QUEUE_URL"] = "http://sqs:4566/000000000000/queue.fifo";
     process.env["NODE_ENV"] = "production";
 
-    const { loadConfig } = await import("../../src/config.js");
+    const { loadConfig } = await import("@/config.js");
     const config = loadConfig();
 
     expect(config.port).toBe(3000);

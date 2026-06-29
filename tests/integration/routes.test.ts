@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import Database from "better-sqlite3";
-import { createApp } from "../../src/app.js";
-import type { Config } from "../../src/config.js";
+import { createApp } from "@/app.js";
+import type { Config } from "@/config.js";
+import { ErrorCode } from "@/types.js";
 import sqsEvent from "../fixtures/sqs-event.json" with { type: "json" };
 
 let db: Database.Database;
@@ -62,7 +63,7 @@ describe("HTTP routes", () => {
     expect(response.json()).toEqual([]);
   });
 
-  it("POST /users returns 202 when SQS queue is not configured", async () => {
+  it("POST /users returns QUEUE_NOT_CONFIGURED when queue URL is empty", async () => {
     const app = createApp(config, db);
     const response = await app.inject({
       method: "POST",
@@ -71,17 +72,25 @@ describe("HTTP routes", () => {
     });
 
     expect(response.statusCode).toBe(500);
+    expect(response.json()).toMatchObject({
+      message: "queue not configured",
+      error_code: ErrorCode.QueueNotConfigured,
+    });
   });
 
-  it("POST /users validates required fields", async () => {
+  it("POST /users returns VALIDATION_ERROR when name is missing", async () => {
     const app = createApp(config, db);
     const response = await app.inject({
       method: "POST",
       url: "/users",
-      body: { name: "Alice" },
+      body: { email: "alice@example.com" },
     });
 
     expect(response.statusCode).toBe(400);
+    expect(response.json()).toMatchObject({
+      message: "name is required",
+      error_code: ErrorCode.ValidationError,
+    });
   });
 });
 
@@ -120,6 +129,7 @@ describe("Events route", () => {
       url: "/events",
       body: sqsEvent,
     });
+
     expect(first.statusCode).toBe(200);
     expect(first.json()).toEqual({ processed: 2 });
 
@@ -128,6 +138,7 @@ describe("Events route", () => {
       url: "/events",
       body: sqsEvent,
     });
+
     expect(second.statusCode).toBe(200);
     expect(second.json()).toEqual({ processed: 2 });
 
@@ -135,7 +146,7 @@ describe("Events route", () => {
     expect(users).toHaveLength(2);
   });
 
-  it("POST /events returns 400 for non-SQS body", async () => {
+  it("POST /events returns UNSUPPORTED_EVENT_TYPE for non-SQS body", async () => {
     const app = createApp(config, db);
 
     const response = await app.inject({
@@ -145,5 +156,9 @@ describe("Events route", () => {
     });
 
     expect(response.statusCode).toBe(400);
+    expect(response.json()).toMatchObject({
+      message: "unsupported event type",
+      error_code: ErrorCode.UnsupportedEventType,
+    });
   });
 });

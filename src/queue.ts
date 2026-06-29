@@ -1,11 +1,13 @@
 import { SQSClient, SendMessageCommand } from "@aws-sdk/client-sqs";
-import type { Config } from "./config.js";
+import type { Config } from "@/config.js";
 import { randomUUID } from "node:crypto";
 
-let client: SQSClient | null = null;
+let client: SQSClient | undefined;
 
-function getClient(config: Config): SQSClient {
-  if (client) return client;
+function getClient(_config: Config): SQSClient {
+  if (client !== undefined) {
+    return client;
+  }
 
   client = new SQSClient({
     region: process.env["AWS_REGION"] || "us-east-1",

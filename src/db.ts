@@ -1,10 +1,12 @@
+import type { Config } from "@/config.js";
 import Database from "better-sqlite3";
-import type { Config } from "./config.js";
 
-let db: Database.Database | null = null;
+let db: Database.Database | undefined;
 
 export function getDatabase(config: Config): Database.Database {
-  if (db) return db;
+  if (db !== undefined) {
+    return db;
+  }
 
   db = new Database(config.databasePath);
 
@@ -31,8 +33,10 @@ export function getDatabase(config: Config): Database.Database {
 }
 
 export function closeDatabase(): void {
-  if (db) {
-    db.close();
-    db = null;
+  if (db === undefined) {
+    return;
   }
+
+  db.close();
+  db = undefined;
 }

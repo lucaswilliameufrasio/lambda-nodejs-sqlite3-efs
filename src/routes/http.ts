@@ -1,8 +1,9 @@
 import type { FastifyInstance } from "fastify";
-import type { Config } from "../config.js";
+import type { Config } from "@/config.js";
 import type Database from "better-sqlite3";
-import { enqueueWrite } from "../queue.js";
-import type { UserBody } from "../types.js";
+import { enqueueWrite } from "@/queue.js";
+import type { UserBody } from "@/types.js";
+import { badRequest, queueNotConfigured } from "@/http-errors.js";
 
 export function registerHttpRoutes(
   app: FastifyInstance,
@@ -14,22 +15,26 @@ export function registerHttpRoutes(
   });
 
   app.get("/users", async () => {
-    const users = db.prepare("SELECT id, name, email, created_at FROM users ORDER BY id").all();
+    const users = db
+      .prepare("SELECT id, name, email, created_at FROM users ORDER BY id")
+      .all();
+
     return users;
   });
 
   app.post<{ Body: UserBody }>("/users", async (request, reply) => {
     const { name, email } = request.body;
 
-    if (!name || typeof name !== "string") {
-      return reply.status(400).send({ error: "name is required" });
-    }
-    if (!email || typeof email !== "string") {
-      return reply.status(400).send({ error: "email is required" });
+    if (typeof name !== "string" || name.length === 0) {
+      return badRequest(reply, "name is required");
     }
 
-    if (!config.sqsQueueUrl) {
-      return reply.status(500).send({ error: "queue not configured" });
+    if (typeof email !== "string" || email.length === 0) {
+      return badRequest(reply, "email is required");
+    }
+
+    if (config.sqsQueueUrl.length === 0) {
+      return queueNotConfigured(reply);
     }
 
     const result = await enqueueWrite(config, { name, email });

@@ -24,6 +24,7 @@ describe("getDatabase", () => {
     const insert = db.prepare(
       "INSERT INTO users (name, email, request_id) VALUES (?, ?, ?)",
     );
+
     insert.run("Alice", "alice@example.com", "req-001");
 
     const users = db.prepare("SELECT * FROM users").all();
@@ -65,11 +66,13 @@ describe("getDatabase", () => {
     const exists = db
       .prepare("SELECT 1 FROM users WHERE request_id = ?")
       .get("req-001");
+
     expect(exists).toBeTruthy();
 
     const notExists = db
       .prepare("SELECT 1 FROM users WHERE request_id = ?")
       .get("req-999");
+
     expect(notExists).toBeUndefined();
 
     db.close();

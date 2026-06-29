@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import type { WriteMessage } from "../../src/types.js";
+import type { WriteMessage } from "@/types.js";
 
 describe("WriteMessage structure", () => {
   it("produces a valid message shape", () => {
